@@ -20,7 +20,7 @@ public class AfterConnection {
      * Compara com o que tem nesta pasta.
      * Para cada ficheiro que é para mandar:
         * Chama a minha função com o PATH de cada ficheiro que é para mandar.
-        *      A minha função precisa de saber qual o destino inicial da mensagem.
+        *      A minha função precisa de saber qual o destino inicial da mensagem, nome, e a data que foi modificado.
      * Num while(receive) com timeout, da mesma forma que o StartConnection, recebe os vários nomes de ficheiros
      *     e chama o receiveFile para os ler (Diogo).
      */
