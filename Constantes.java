@@ -59,10 +59,10 @@ public class Constantes {
      */
 
     public boolean whatPort;
-    public int officialPort1 = 8886;
+    public int officialPort1 = OfficialPort;
 //    public int officialPort2 = 8888;
 //    public int officialPort1 = 8888;
-    public int officialPort2 = 8887;
+    public int officialPort2 = OfficialPort;
     public int WhatPort(){
         if (whatPort) return officialPort1;
         return officialPort2;

@@ -26,34 +26,35 @@ public class SendLS implements Runnable{
     public void run() {
         int portOtherSide = getPortFromSynLS(this.message);
         try {
-            System.out.println("[sendLS]: manda o ls");
+            System.out.println("[sendLS]: manda o ls para esta porta ");
+            System.out.println("[sendLS]: " + portOtherSide);
 
             DatagramSocket sendSocket = new DatagramSocket();
-            DatagramSocket receiveSocket = new DatagramSocket();
+           // DatagramSocket receiveSocket = new DatagramSocket();
             byte[] receiveFileInfo = new byte[Constantes.maxSizePacket]; // Where we store the data of datagram of the name
             DatagramPacket receive = new DatagramPacket(receiveFileInfo, receiveFileInfo.length);
 
-            byte[] toSend = AfterConnection.currentLS(receiveSocket.getLocalPort());
+            byte[] toSend = AfterConnection.currentLS(sendSocket.getLocalPort());
             DatagramPacket sendLS = new DatagramPacket(toSend, toSend.length,
                     this.destIP, portOtherSide);
 
           //  sendSocket.send(sendLS);
-            receiveSocket.setSoTimeout(Constantes.timeBetweenHello);
+            sendSocket.setSoTimeout(Constantes.timeBetweenHello);
 
             boolean connected = false;
             //Enquanto não receber um ACK do ls que mandou, continua a enviar.
             while (!connected) {
                 sendSocket.send(sendLS);
                 System.out.println("[sendLS]: Envia ls");
-                System.out.println("[sendLS]: Recebe nesta porta "+receiveSocket.getLocalPort());
+                System.out.println("[sendLS]: Recebe nesta porta "+sendSocket.getLocalPort());
 
                 try {
-                    receiveSocket.receive(receive);
+                    sendSocket.receive(receive);
                     //sendSocket.send(sendLS);
                     if (receiveFileInfo[0] == (byte) Constantes.FynLS) {
                         connected = true; // a packet has been received : stop sending
                         System.out.println("[sendLS]: Receive Fin LS");
-                        endConnection(sendSocket, receiveSocket, this.destIP, this.flagPort);
+                        endConnection(sendSocket, sendSocket, this.destIP, receive.getPort());
                         return;
                     } else {
                         System.out.println("[sendLS]: RECEIVE, but not SYN or SynACK");
@@ -82,13 +83,13 @@ public class SendLS implements Runnable{
      * @param flagPort
      * @throws IOException
      */
-    private static void endConnection(DatagramSocket sendSocket, DatagramSocket receiveSocket, InetAddress destIP, Constantes flagPort) throws IOException {
+    private static void endConnection(DatagramSocket sendSocket, DatagramSocket receiveSocket, InetAddress destIP, int portOtherSide) throws IOException {
        int attempts = 10;
         boolean receiveFin = false;
         byte[] finACKByte = new byte[1];
         finACKByte[0] = (byte) Constantes.FynLS;
         //byte[] lastFinB = new byte[1];
-        DatagramPacket finPacket = new DatagramPacket(finACKByte, finACKByte.length,destIP, flagPort.WhatPortToSend());
+        DatagramPacket finPacket = new DatagramPacket(finACKByte, finACKByte.length,destIP, portOtherSide);
 
         byte[] receiveFileInfo = new byte[Constantes.maxSizePacket]; // Where we store the data of datagram of the name
         DatagramPacket receive = new DatagramPacket(receiveFileInfo, receiveFileInfo.length);

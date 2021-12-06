@@ -142,8 +142,8 @@ public class AfterConnection implements Runnable {
 //        int sizeString = ByteBuffer.wrap(sizeSrting).getInt();
 
 
-        byte[] string = new byte[message.length-1]; //testLS.getBytes();
-        System.arraycopy(message, 1, string, 0, string.length);
+        byte[] string = new byte[message.length-1-Integer.SIZE]; //testLS.getBytes();
+        System.arraycopy(message, 1+Integer.SIZE, string, 0, string.length);
         return new String(string);
     }
 
@@ -152,6 +152,8 @@ public class AfterConnection implements Runnable {
         System.out.println("[AfterConnection] This port " + port);
 
         String testLS = "Olá, estou correto?";
+        System.out.println("[AfterConnection] : String sent");
+        System.out.println("[AfterConnection] : "+testLS);
         byte[] toSend = testLS.getBytes();
 
         byte[] res = new byte[toSend.length+1+Integer.SIZE];
