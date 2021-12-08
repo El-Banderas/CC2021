@@ -95,7 +95,7 @@ public class StartConnection {
                 System.out.println("[StartConnection]: Não houve conexão");
             }
 
-            }
+        }
         } catch (SocketException socketException) {
             socketException.printStackTrace();
             System.out.println("[StartConnection]: Erro no socket");
@@ -176,7 +176,6 @@ public class StartConnection {
             System.arraycopy(thisPortBytes, 0, sendACK, currentPositionToSend, thisPortBytes.length);
             currentPositionToSend += thisPortBytes.length;
 
-
             DatagramPacket infoFromFileSEND = new DatagramPacket(sendACK, sendACK.length, destIP, portOtherSide);
             byte[] receiveFile = new byte[Constantes.maxSizePacket]; // Where we store the data of datagram of the name
             DatagramPacket receive = new DatagramPacket(receiveFile, receiveFile.length);
@@ -211,7 +210,6 @@ public class StartConnection {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
 
     }
 }
