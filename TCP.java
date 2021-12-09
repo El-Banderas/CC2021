@@ -1,7 +1,7 @@
 import java.io.*;
 import java.net.*;
 
-public class TCPServidor {
+public class TCP {
     public static void main(String[] args) {
 
         ServerSocket servidor = null;
