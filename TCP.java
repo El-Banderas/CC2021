@@ -1,78 +1,34 @@
 import java.io.*;
 import java.net.*;
 
-public class TCP {
-    public static void main(String[] args) {
+public class TCP implements Runnable {
 
-        ServerSocket servidor = null;
-
+    @Override
+    public void run() {
         try {
 
-            servidor = new ServerSocket(8888);servidor.setReuseAddress(true);
-
-            while (true) {
-
-                Socket cliente = servidor.accept();
-
-                System.out.println("Novo cliente connetado " + cliente.getInetAddress().getHostAddress());
-
-                ClientHandler clienteSocket = new ClientHandler(cliente);
-
-                new Thread(clienteSocket).start();
-
-            }
-        }
-        catch (IOException except) {
-            except.printStackTrace();
-        }
-        finally {
-            if (servidor != null) {
-                try {
-                    servidor.close();
-                }
-                catch (IOException except) {
-                    except.printStackTrace();
-                }
-            }
-        }
-    }
-
-    private static class ClientHandler implements Runnable {
-        private final Socket clienteSocket;
-
-        public ClientHandler(Socket socket) {
-            this.clienteSocket = socket;
-        }
-
-        public void run() {
-            PrintWriter out = null;
-            BufferedReader in = null;
+            ServerSocket servidor = null;
             try {
-                out = new PrintWriter(clienteSocket.getOutputStream(),true);
-                in = new BufferedReader(new InputStreamReader(clienteSocket.getInputStream()));
+                servidor = new ServerSocket(Constantes.OfficialPort);
+                servidor.setReuseAddress(true);
+            } catch (IOException e) {
+                e.printStackTrace();
 
-                String linha;
-                while (linha = in.readLine() != null) {
+                while (true) {
 
-                    System.out.printf(" Sent from the client: %s\n",line);
-                    out.println(linha);
+                    Socket cliente = null;
+                    try {
+                        cliente = servidor.accept();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+
+                    System.out.println("Novo cliente conectado " + cliente.getInetAddress().getHostAddress());
 
                 }
             }
-            catch (IOException expect) {
-                except.printStackTrace();
-            }
-            finally {
-
-                try {
-                    if (out != null) {out.close();}
-                    if (in != null) {in.close();clienteSocket.close();}
-                }
-                catch (IOException expect) {
-                    except.printStackTrace();
-                }
-
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
