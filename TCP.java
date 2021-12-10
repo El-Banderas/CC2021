@@ -12,60 +12,89 @@ public class TCP implements Runnable {
         try {
 
             ServerSocket servidor = null;
+
             try {
+
                 servidor = new ServerSocket(Constantes.OfficialPort);
                 servidor.setReuseAddress(true);
+
             }
+
             catch (IOException e) {
                 e.printStackTrace();
+
             }
 
-                while (true) {
+            while (true) {
 
-                    Socket cliente = null;
-                    try {
-                        cliente = servidor.accept();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
+                Socket cliente = null;
 
-                    System.out.println("Novo cliente conectado " + cliente.getInetAddress().getHostAddress());
+                try {
+                    cliente = servidor.accept();
+                }
 
-                    try {
+                catch (IOException ex) {
+                    ex.printStackTrace();
+                }
 
-                        out = new PrintWriter(cliente.getOutputStream(),true);
-                        in = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
+                System.out.println("Novo cliente conectado " + cliente.getInetAddress().getHostAddress());
 
-                        String input;
-                        while ((input = in.readLine()) != null) {
+                try {
 
-                            // Função que dá print do HTML.
+                    out = new PrintWriter(cliente.getOutputStream(),true);
+                    in = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
+                    String input;
 
+                    while ((input = in.readLine()) != null) {
 
+                        String link = input.substring(5);
 
-                        }
-
-                    }
-                    catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                    finally {
                         try {
-                            if (out != null) out.close();
-                            if (in != null) {
-                                in.close();
-                                cliente.close();
-                            }
-                        }
-                        catch (IOException exc) {
-                            exc.printStackTrace();
-                        }
-                    }
 
-                    new Thread().start();
+                            URL url = new URL(link);
+                            BufferedReader readURL = new BufferedReader(new InputStreamReader(url.openStream()));
+                            BufferedWriter writeURL = new BufferedWriter(new FileWriter("")); // precisa da pasta pedida como o argumento 1 de FFSync.
+                            String linha;
+
+                            while ((linha = readURL.readLine()) != null) {
+                                writeURL.write(linha);
+                            }
+
+                            readURL.close();
+                            writeURL.close();
+
+                        }
+                        catch (MalformedURLException exception) {
+                            System.out.println("Malformed URL Exception raised");
+                        }
+                        catch (IOException i) {
+                            System.out.println("IOException raised");
+                        }
+
+                    }
 
                 }
+                catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+                finally {
+                    try {
+                        if (out != null) out.close();
+                        if (in != null) {
+                            in.close();
+                            cliente.close();
+                        }
+                    }
+                    catch (IOException exc) {
+                        exc.printStackTrace();
+                    }
+                }
+
+                new Thread().start();
+
             }
+
+        }
         catch (Exception e) {
             e.printStackTrace();
         }
