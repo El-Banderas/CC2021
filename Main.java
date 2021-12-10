@@ -11,8 +11,6 @@ public class Main {
     public static void main(String[] args) throws IOException {
         numberThreads = 0;
 
-        Thread tcp = new Thread();
-
         Path path = Paths.get("/home/banderitas/Desktop/3_ano_1_sem/CC/TransferFiles/src/rfc7231.txt");
 
         if (args.length < 1) {
