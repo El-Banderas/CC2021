@@ -1,102 +1,106 @@
 import java.io.*;
 import java.net.*;
 
-public class TCP implements Runnable {
-
-    @Override
-    public void run() {
-
-        BufferedReader in = null;
-        PrintWriter out = null;
+public class TCP {
+    public static void main(String[] args) {
+        ServerSocket servidor = null;
 
         try {
-
-            ServerSocket servidor = null;
-
-            try {
-
-                servidor = new ServerSocket(Constantes.OfficialPort);
-                servidor.setReuseAddress(true);
-
-            }
-
-            catch (IOException e) {
-                e.printStackTrace();
-
-            }
+            servidor = new ServerSocket(Constantes.OfficialPort);
+            servidor.setReuseAddress(true);
 
             while (true) {
 
-                Socket cliente = null;
+                Socket cliente = servidor.accept();
 
+                System.out.println("Novo cliente connectado : " + cliente.getInetAddress().getHostAddress());
+
+                ClientHandler clienteSocket = new ClientHandler(cliente);
+
+                new Thread(clienteSocket).start();
+
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+            if (servidor != null) {
                 try {
-                    cliente = servidor.accept();
+                    servidor.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+            }
+        }
+    }
 
-                catch (IOException ex) {
-                    ex.printStackTrace();
+    public static class ClientHandler implements Runnable {
+        private final Socket client;
+
+        public ClientHandler(Socket client) {
+            this.client = client;
+        }
+
+        public void run() {
+            PrintWriter out = null;
+            BufferedReader in = null;
+
+            try {
+                out = new PrintWriter(client.getOutputStream(),true);
+                in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                String line;
+                while((line = in.readLine()) != null) {
+
+                    System.out.println(line);
+
+                    // Step 1 : Have the StringBuilder obtain the IP address given as argument.
+                    StringBuilder HTML = null;
+                    HTML.append(line);
+
+                    // Step 2 : Get directory given from the IP and obtain all the files in it through InfoLs, an array of Strings. While I'm at it,clean the StringBuilder.
+                    File dir = new File(HTML.toString());
+                    String[] InfoLs = dir.list();
+                    HTML.delete(0,HTML.length());
+
+                    //Step 3 : Create the start of the HTML file.
+
+                    String startHTML = new String("<html>\n <head>\n </head>\n <body>\n");
+                    HTML.append(startHTML);
+
+                    //Step 4 : Create the body of the HTML file( AKA, the files from the IP address )
+
+                    for (int i = 0; i <= InfoLs.length; i++) {
+
+                    }
+
+                    // start of html file.
+                    // body of html file.
+                    // Pires DLC.
+                    // end of html file.
+
                 }
-
-                System.out.println("Novo cliente conectado " + cliente.getInetAddress().getHostAddress());
-
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+            finally {
                 try {
-
-                    out = new PrintWriter(cliente.getOutputStream(),true);
-                    in = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
-                    String input;
-
-                    while ((input = in.readLine()) != null) {
-
-                        String link = input.substring(5);
-
-                        try {
-
-                            URL url = new URL(link);
-                            BufferedReader readURL = new BufferedReader(new InputStreamReader(url.openStream()));
-                            BufferedWriter writeURL = new BufferedWriter(new FileWriter("")); // precisa da pasta pedida como o argumento 1 de FFSync.
-                            String linha;
-
-                            while ((linha = readURL.readLine()) != null) {
-                                writeURL.write(linha);
-                            }
-
-                            readURL.close();
-                            writeURL.close();
-
-                        }
-                        catch (MalformedURLException exception) {
-                            System.out.println("Malformed URL Exception raised");
-                        }
-                        catch (IOException i) {
-                            System.out.println("IOException raised");
-                        }
-
+                    if (out != null) {
+                        out.close();
                     }
-
-                }
-                catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-                finally {
-                    try {
-                        if (out != null) out.close();
-                        if (in != null) {
-                            in.close();
-                            cliente.close();
-                        }
-                    }
-                    catch (IOException exc) {
-                        exc.printStackTrace();
+                    if (in != null) {
+                        in.close();
+                        client.close();
                     }
                 }
-
-                new Thread().start();
-
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
             }
 
         }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+
     }
+
 }
