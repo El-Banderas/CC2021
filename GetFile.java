@@ -1,122 +1,87 @@
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
+/**
+ * This class is used to get a file from other computer, by the IP adress.
+ */
 public class GetFile implements Runnable{
-    private DatagramSocket otherSide;
+    private DatagramSocket sendSocket;
     private InetAddress destIP;
     //Depois eliminar
     private Constantes flagPort;
+    private String givenPath;
+    private LogInformation log;
 
-    //Informação que só chega depois do ACK
+    //This information is completed after the "Ack file" message is received.
     private int numberPackets;
+    private int sizeFile;
     private long lastTimeMod;
     private int portOtherSide;
-    private String givenPath;
 
 
     /**
-     * Construtor
-     *
+     * Constructor
+     * @param destIP IP from where we want the file
+     * @param flagPort
+     * @param givenPath Path to the file we want.
+     * @param log Class that holds the log file, and shared variables.
      */
-    public GetFile(InetAddress destIP, Constantes flagPort, String givenPath) {
+    public GetFile(InetAddress destIP, Constantes flagPort, String givenPath, LogInformation log) {
         this.destIP = destIP;
         this.flagPort = flagPort;
         this.givenPath = givenPath;
-        try {
-            otherSide = new DatagramSocket();
-        } catch (SocketException e) {
-            e.printStackTrace();
-            System.out.println("[getFile]: Erro ao criar socket");
-        }
+        this.log = log;
     }
 
-    /**
-     * Fills the packet of SYNFILE with information about the request.
-     * It sends the port to receive, the size of a string with the path of the file, and the path of the file.
-     * @param localPortToReceive Port to receive information
-     * @return
-     */
-    private DatagramPacket packetOfSYNFile(int localPortToReceive){
-        //Bytes para enviar
-        int currentByteTry = 0;
 
-        //Assim o outro lado sabe para onde mandar
-        byte[] portToReceive = ByteBuffer.allocate(Integer.SIZE).putInt(localPortToReceive).array();
-
-        //Manda também o comprimento da String
-         byte[] sizeString = ByteBuffer.allocate(Integer.SIZE).putInt(givenPath.getBytes().length).array();
-       // System.out.println("[GETFILE] Size of path " + givenPath.getBytes().length);
-       // System.out.println("[GETFILE] Path " + givenPath);
-         //Assim, quando faz o pedido de getFile, manda já o Path e a porta pela qual espera receber
-        byte[] pathBytes = givenPath.getBytes();
-        //O +1 é para o tipo de mensagem
-        int sizePacket = portToReceive.length + sizeString.length + pathBytes.length + 1;
-        byte[] tryConnection = new byte[sizePacket];
-
-
-        tryConnection[currentByteTry] = (byte) Constantes.SYNFile;
-        currentByteTry++;
-
-        System.arraycopy(portToReceive, 0, tryConnection, currentByteTry, portToReceive.length);
-        currentByteTry+=portToReceive.length;
-
-        System.arraycopy(sizeString, 0, tryConnection, currentByteTry, sizeString.length);
-        currentByteTry += sizeString.length;
-
-        System.arraycopy(pathBytes, 0, tryConnection, currentByteTry, pathBytes.length);
-        currentByteTry += pathBytes.length;
-
-        DatagramPacket synFile = new DatagramPacket(tryConnection, currentByteTry,
-                destIP, flagPort.WhatPortToSend());
-        return synFile;
-    }
 
     /**
      * Starts connection to receive file.
+     * @return Information about the connection.
      */
     private MainConnection startGetOneFile() {
         boolean connected = false;
         try {
-            int timeBetweenHellos = 1000;
-            //Bytes para receber
 
-            //Define qual a porta em que recebe coisas
-// Talvez seja preciso meter um número no receive
-            DatagramSocket sendSocket = new DatagramSocket();
-            DatagramSocket receiveSocket = new DatagramSocket();
-            DatagramPacket synFile = packetOfSYNFile(receiveSocket.getLocalPort());
+            this.sendSocket = new DatagramSocket();
+            DatagramPacket synFile = GetArray.packetOfSYN(true, givenPath, destIP, flagPort);
             byte[] receiveFileInfo = new byte[Constantes.maxSizePacket]; // Where we store the data of datagram of the name
             DatagramPacket receive = new DatagramPacket(receiveFileInfo, receiveFileInfo.length);
 
 
-            receiveSocket.setSoTimeout(timeBetweenHellos);
+            sendSocket.setSoTimeout(Constantes.timeBetweenHello);
           //  DatagramPacket receivePacket = new DatagramPacket(receiveFileInfo, receiveFileInfo.length);
-            sendSocket.send(synFile);
+            //sendSocket.send(synFile);
             //Enquanto não estiver connectado
             while (!connected){
-                System.out.println("[GetFile] O outro lado deve mostrar:");
-                System.out.println("[GetFile] porta deste lado " + receiveSocket.getLocalPort());
-                System.out.println("[GetFile] path " + givenPath);
+                System.out.println("[Files.GetFile] O outro lado deve mostrar:");
+                System.out.println("[Files.GetFile] porta deste lado " + sendSocket.getLocalPort());
+                System.out.println("[Files.GetFile] path " + givenPath);
                 //Envia uma tentativa de conexão
                 sendSocket.send(synFile);
                 System.out.println("[getFile]: Envia Get");
                 //Tenta receber qualquer coisa
                 try{
-                    receiveSocket.receive(receive);
-                    sendSocket.send(synFile);
+                    sendSocket.receive(receive);
+                 //   sendSocket.send(synFile);
+
                     if (receiveFileInfo[0] == (byte) Constantes.ACKFile) {
+                        //Envia ACK de que recebeu tamanho do ficheiro
+
                         connected = true; // a packet has been received : stop sending
                         System.out.println("[getFile]: Houve conexão");
                         System.out.println("[getFile]: Information about other side:");
                         System.out.println("[getFile]: "+receive.getPort()+" origem");
                         handleACK(receiveFileInfo);
+                        this.portOtherSide = receive.getPort();
                         //O MainConnection receberá  o Path
-                        return new MainConnection(receiveSocket, receive, sendSocket, synFile, true);
+
+                      //  sendSocket.send(ackFile);
+                      //  sendSocket.send(ackFile);
+                      //  sendSocket.send(ackFile);
+                        return new MainConnection(sendSocket, receive, sendSocket, synFile, true);
                     }
                     else
                     {
@@ -142,57 +107,85 @@ public class GetFile implements Runnable{
         return null;
     }
 
+    /**
+     * This function handles the information received by the first ACK packet.
+     * Stores in this object the size of the file, the number of packets we are going to receive, and the last time modified of the file received.
+     * @param messageACK Content of the Ack message received.
+     */
     private void handleACK(byte[] messageACK){
         byte[] arrayBytes = new byte[Integer.SIZE];
         System.arraycopy(messageACK,  1, arrayBytes, 0, Integer.SIZE);
-        this.numberPackets = ByteBuffer.wrap(arrayBytes).getInt();
+        this.sizeFile = ByteBuffer.wrap(arrayBytes).getInt();
 
+        this.numberPackets = Constantes.calculaNumPacotes(sizeFile);
         byte[] ltmB = new byte[Long.SIZE];
         System.arraycopy(messageACK,  1+Integer.SIZE, ltmB, 0, Long.SIZE);
         this.lastTimeMod = ByteBuffer.wrap(ltmB).getLong();
 
-        System.arraycopy(messageACK,  1+Integer.SIZE+Long.SIZE, arrayBytes, 0, Integer.SIZE);
-        this.portOtherSide = ByteBuffer.wrap(arrayBytes).getInt();
-/*
-        System.out.println("[GetFile] Read this information from Sender");
-        System.out.println("[GetFile] num pack: " + numberPackets);
-        System.out.println("[GetFile] last time M " + lastTimeMod);
-        System.out.println("[GetFile] port to send " + portOtherSide);
-*/
-    }
+        //System.arraycopy(messageACK,  1+Integer.SIZE+Long.SIZE, arrayBytes, 0, Integer.SIZE);
+        //this.portOtherSide = ByteBuffer.wrap(arrayBytes).getInt();
 
+        System.out.println("[Files.GetFile] Read this information from Sender");
+        System.out.println("[Files.GetFile] num pack: " + numberPackets);
+        System.out.println("[Files.GetFile] last time M " + lastTimeMod);
+        System.out.println("[Files.GetFile] port to send " + portOtherSide);
 
-    public void run () {
-      MainConnection connection = startGetOneFile();
-      receiveFile(connection);
     }
 
     /**
-     * After the creation of two new ports to transmit the file, this function will receive the file and send the ACK's to the other side.
+     * Main method of this class.
+     * First, it tries to get a connection with the computer that holds the file.
+     * Then, starts receiving the file.
+     * Also, this function changes the date the file was modified to the original same date.
+     */
+    public void run () {
+        log.incrementNThreads();
+        log.writeGetFile(givenPath, destIP, portOtherSide);
+        long start = System.currentTimeMillis();
+      MainConnection connection = startGetOneFile();
+      receiveFile(connection);
+        long finish = System.currentTimeMillis();
+        log.writeDurationFileTransfer(finish-start, givenPath, sizeFile);
+        log.decrementNThreads();
+    }
+
+    /**
+     * After the creation of two new ports to transmit the file, this function will call the "GetArray" class to receive the file.
      * @param connection Information about the connection.
      */
     private void receiveFile(MainConnection connection) {
         System.out.println("[GETFILE] -------------------------------");
         System.out.println("[GETFILE]       Agora recebe pacote");
-        try {
-            File f = new File(givenPath); // Creating the file
-            FileOutputStream outToFile = new FileOutputStream(f); // Creating the stream through which we write the file content
-            int nPacketsReceived = 0;
-            //Pode haver erro aqui
-            while (nPacketsReceived < numberPackets) {
-
-            }
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            System.out.println("[GetFile] : Erro ao criar ficheiro.");
-        }
-
-
+        System.out.println("[GETFILE] Recebe em " + sendSocket.getLocalPort());
+        System.out.println("[GETFILE] Envia para " + portOtherSide);
+        //GetArray toGet = new GetArray(sendSocket, destIP, flagPort, numberPackets, sizeFile, portOtherSide, givenPath, log);
+        GetArray toGet = new GetArray(connection, log, numberPackets, sizeFile, givenPath, lastTimeMod);
+        toGet.receiveFile(true);
     }
 
 
-}
+
+
+
+        /*
+        byte[] numSeq = new byte[Constantes.starFilePosition - 1];
+        System.arraycopy(receive, 0, numSeq, 0, numSeq.length);
+        try {
+            int x = ByteBuffer.wrap(numSeq).getChar();
+
+            System.out.println("[Files.GetFile] Recebeu um pacote estranho");
+            System.out.println("[Files.GetFile] Começa por " + x);
+
+            return x;
+        }
+        catch (Exception e){
+            return 0;
+        }
+        */
+    }
+
+
+
 
 
   /*

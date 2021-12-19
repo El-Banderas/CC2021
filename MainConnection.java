@@ -10,6 +10,7 @@ public class MainConnection {
     public boolean getFile;
     //Caso seja um get, pode guardar já o path.
     public byte[] file;
+    public int numPackets;
 
     /**
      * General connections
@@ -39,13 +40,14 @@ public class MainConnection {
      * @param otherPacket
      * @param file
      */
-    public MainConnection(DatagramSocket here, DatagramPacket herePacket, DatagramSocket otherSide, DatagramPacket otherPacket, byte[] file) {
+    public MainConnection(DatagramSocket here, DatagramPacket herePacket, DatagramSocket otherSide, DatagramPacket otherPacket, byte[] file, int numPackets) {
         this.here = here;
         this.herePacket = herePacket;
         this.otherSide = otherSide;
         this.otherPacket = otherPacket;
         this.getFile = true;
         this.file = file;
+        this.numPackets = numPackets;
     }
 
     public void close (){
