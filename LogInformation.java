@@ -38,6 +38,7 @@ public class LogInformation {
     public int getNThreads(){
         return nThreads;
     }
+
     public LogInformation(boolean write) {
         if (write) {
             this.write = write;

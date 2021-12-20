@@ -1,9 +1,12 @@
 import com.sun.net.httpserver.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class HTTPconnection implements Runnable {
     private LogInformation log;
@@ -71,11 +74,28 @@ public class HTTPconnection implements Runnable {
             OutputStream outputStream = httpExchange.getResponseBody();
             StringBuilder htmlBuilder = new StringBuilder();
 
-            htmlBuilder.append("<html>").
-                    append("<body>").
-                    append("<h1>").
-                    append("Recebeu um Info ")
+            File directory = new File(System.getProperty("user.dir"));
+            String[] InfoLs = directory.list();
+
+            htmlBuilder.append("<html>")
+                    .append("<body>")
+                    .append("<h1>")
+                    .append("Info Recebido. ")
                     .append("</h1>")
+                    .append("Info of this directory: ")
+                    .append("<ul>");
+            for (int i = 0; i < InfoLs.length;i++) {
+                htmlBuilder.append("<li>" + InfoLs[i] + "</li>");
+            }
+            htmlBuilder.append("</ul>")
+                    .append("<table>")
+                    .append("<tr>").append("<th>Nome do ficheiro</th>").append("<th>Data da última modificação</th>").append("</tr>");
+            for (int i = 0; i < InfoLs.length; i++) {
+                File specific = new File(directory.getAbsolutePath() + "\\"  + InfoLs[i]);
+                htmlBuilder.append("<tr>").append("<th>" + InfoLs[i] + "</th>").append("<th>" + MillisecondsToDate(specific.lastModified()) + "</th>").append("</tr>");
+            }
+            htmlBuilder.append("</table>")
+                    .append("Número de ficheiros: " + InfoLs.length)
                     .append("</body>")
                     .append("</html>");
             // encode HTML content
@@ -85,6 +105,12 @@ public class HTTPconnection implements Runnable {
             outputStream.write(htmlBuilder.toString().getBytes());
             outputStream.flush();
             outputStream.close();
+        }
+
+        private String MillisecondsToDate(long mili) {
+            DateFormat simplification = new SimpleDateFormat("yyyy MM dd HH:mm:ss");
+            Date easyDay = new Date(mili);
+            return(simplification.format(easyDay));
         }
 
         /**
@@ -100,11 +126,11 @@ public class HTTPconnection implements Runnable {
             htmlBuilder.append("<html>").
                     append("<body>").
                     append("<h1>").
-                    append("Recebeu um Nada correto !!!! ")
+                    append("Error 404, page not found. ")
                     .append("</h1>")
                     .append("</body>")
                     .append("</html>");
-// encode HTML content
+            // encode HTML content
             //String htmlResponse = StringEscapeUtils.escapeHtml4(htmlBuilder.toString());
             // this line is a must
             httpExchange.sendResponseHeaders(200, htmlBuilder.length());
@@ -112,14 +138,15 @@ public class HTTPconnection implements Runnable {
             outputStream.flush();
             outputStream.close();
         }
+
         private void handleResponse404(HttpExchange httpExchange) throws IOException {
             OutputStream outputStream = httpExchange.getResponseBody();
             StringBuilder htmlBuilder = new StringBuilder();
 
-            htmlBuilder.append("<html>").
-                    append("<body>").
-                    append("<h1>").
-                    append("Não sei o que recebi sem argumentos")
+            htmlBuilder.append("<html>")
+                    .append("<body>")
+                    .append("<h1>")
+                    .append("Não sei o que recebi sem argumentos.")
                     .append("</h1>")
                     .append("</body>")
                     .append("</html>");
@@ -157,11 +184,13 @@ public class HTTPconnection implements Runnable {
             OutputStream outputStream = httpExchange.getResponseBody();
             StringBuilder htmlBuilder = new StringBuilder();
 
-            htmlBuilder.append("<html>").
-                    append("<body>").
-                    append("<h1>").
-                    append("Recebeu um LOG !!!! ")
+            htmlBuilder.append("<html>")
+                    .append("<body>")
+                    .append("<h1>")
+                    .append("Log Menu: ")
+                    //.append()
                     .append("</h1>")
+                    .append("Current Number of Active Threads: " + log.getNThreads())
                     .append("</body>")
                     .append("</html>");
             // encode HTML content
